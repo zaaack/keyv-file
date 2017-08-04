@@ -18,9 +18,9 @@ module.exports = class KeyvFile {
     this._opts = Object.assign(defaults, opts)
     this._lastSave = Date.now()
     try {
-      const {cache, lastExpire} = msgpack.decode(fs.readFileSync(this._opts.filename))
-      this._cache = cache
-      this._lastExpire = lastExpire
+      const data = msgpack.decode(fs.readFileSync(this._opts.filename))
+      this._cache = data.cache
+      this._lastExpire = data.lastExpire
     } catch (e) {
       debug(e)
       this._cache = {}
@@ -39,9 +39,10 @@ module.exports = class KeyvFile {
     }
 	}
 
-	set(key, value, ttl = null) {
+	set(key, value, ttl) {
+    ttl = ttl === undefined ? null : ttl
     this._cache[key] = {
-      value,
+      value: value,
       expire: ttl !== null ? Date.now() + ttl : null,
     }
     this.save()
