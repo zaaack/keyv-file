@@ -5,7 +5,7 @@ import KeyvStore from './';
 import tk from 'timekeeper'
 
 const store = () => new KeyvStore();
-// keyvTestSuite(test, Keyv, store);
+keyvTestSuite(test, Keyv, store);
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
