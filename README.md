@@ -29,7 +29,7 @@ const customKeyv = new Keyv({
   store: newKeyvFile({
     filename: `${os.tmpdir()}/keyv-file/default-rnd-${Math.random().toString(36).slice(2)}.msgpack` // the file path to store the data
     expiredCheckDelay: 24 * 3600 * 1000, // ms, check and remove expired data in each ms
-    writeDiskDelay: 100, // ms, batch write to disk in a specific duration, enhance write performance.
+    writeDelay: 100, // ms, batch write to disk in a specific duration, enhance write performance.
   })
 })
 ```

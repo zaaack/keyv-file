@@ -13,7 +13,7 @@ module.exports = class KeyvFile {
     const defaults = {
       filename: `${os.tmpdir()}/keyv-file/default-rnd-${Math.random().toString(36).slice(2)}.msgpack`,
       expiredCheckDelay: 24 * 3600 * 1000, // ms
-      writeDiskDelay: 100, // ms
+      writeDelay: 100, // ms
     }
     this._opts = Object.assign(defaults, opts)
     this._lastSave = Date.now()
@@ -91,7 +91,7 @@ module.exports = class KeyvFile {
     this._saveTimer && clearTimeout(this._saveTimer)
     this._saveTimer = setTimeout(
       () => this.saveToDisk(),
-      this._opts.writeDiskDelay
+      this._opts.writeDelay
     )
   }
 }
