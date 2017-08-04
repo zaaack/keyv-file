@@ -1,3 +1,5 @@
+'use strict';
+
 const msgpack = require('msgpack-lite')
 const os = require('os')
 const fs = require('fs-extra')
