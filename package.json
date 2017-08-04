@@ -1,0 +1,36 @@
+{
+  "name": "keyv-file",
+  "version": "0.1.0",
+  "description": "File storage adapter for Keyv, using msgpack to serialize data fast and small.",
+  "main": "index.js",
+  "scripts": {
+    "test": "ava"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zaaack/keyv-file.git"
+  },
+  "keywords": [
+    "keyv",
+    "msgpack",
+    "fast",
+    "storage",
+    "cache",
+    "simple"
+  ],
+  "author": "zaaack",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zaaack/keyv-file/issues"
+  },
+  "homepage": "https://github.com/zaaack/keyv-file#readme",
+  "devDependencies": {
+    "ava": "^0.21.0",
+    "keyv": "^1.0.4",
+    "keyv-test-suite": "^1.5.0"
+  },
+  "dependencies": {
+    "fs-extra": "^4.0.1",
+    "msgpack-lite": "^0.1.26"
+  }
+}
