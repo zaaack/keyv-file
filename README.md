@@ -36,4 +36,4 @@ const customKeyv = new Keyv({
 
 ## License
 
-MIT © Zaaack
+MIT
