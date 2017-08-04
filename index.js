@@ -27,11 +27,12 @@ module.exports = class KeyvFile {
       this._lastExpire = Date.now()
     }
   }
+  
   get(key) {
     const data = this._cache[key]
     if (!data) {
       return undefined
-    } else if (data.expire !== null && data.expire < Date.now()) {
+    } else if (data.expire !== null && data.expire <= Date.now()) {
       this.delete(key)
       return undefined
     } else {
@@ -63,13 +64,13 @@ module.exports = class KeyvFile {
 
   clearExpire() {
     const now = Date.now()
-    if (now - this._lastExpire < this._opts.expiredCheckDelay) {
+    if (now - this._lastExpire <= this._opts.expiredCheckDelay) {
       return
     }
     Object.keys(this._cache).forEach(key => {
       const data = this._cache[key]
-      if (data.expire !== null && data.expire > now) {
-        this.delete(key)
+      if (data.expire !== null && data.expire <= now) {
+        delete this._cache[key]
       }
     })
     this._lastExpire = now
@@ -88,6 +89,7 @@ module.exports = class KeyvFile {
   }
 
   save() {
+    this.clearExpire()
     this._saveTimer && clearTimeout(this._saveTimer)
     this._saveTimer = setTimeout(
       () => this.saveToDisk(),
