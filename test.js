@@ -35,7 +35,7 @@ test('save and clearExpire', async t => {
   t.is(await store2.get('aa2'), 'bb')
   store2 = null
 
-  await sleep(100)
+  await sleep(200)
   const store3 = new KeyvStore(config)
 
   tk.travel(new Date(Date.now() + sec))
