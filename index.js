@@ -1,11 +1,15 @@
 'use strict';
 
-const msgpack = require('msgpack-lite')
+const msgpack = require('notepack.io')
 const os = require('os')
 const fs = require('fs-extra')
 const Debug = require('debug')
 
 const debug = Debug('keyv-file')
+
+function isNumber(val) {
+  return typeof val === 'number'
+}
 
 module.exports = class KeyvFile {
   constructor(opts) {
@@ -14,11 +18,13 @@ module.exports = class KeyvFile {
       filename: `${os.tmpdir()}/keyv-file/default-rnd-${Math.random().toString(36).slice(2)}.msgpack`,
       expiredCheckDelay: 24 * 3600 * 1000, // ms
       writeDelay: 100, // ms
+      encode: msgpack.encode,
+      decode: msgpack.decode
     }
     this._opts = Object.assign(defaults, opts)
     this._lastSave = Date.now()
     try {
-      const data = msgpack.decode(fs.readFileSync(this._opts.filename))
+      const data = this._opts.decode(fs.readFileSync(this._opts.filename))
       this._cache = data.cache
       this._lastExpire = data.lastExpire
     } catch (e) {
@@ -27,40 +33,44 @@ module.exports = class KeyvFile {
       this._lastExpire = Date.now()
     }
   }
-  
+
   get(key) {
     const data = this._cache[key]
     if (!data) {
       return undefined
-    } else if (data.expire !== null && data.expire <= Date.now()) {
+    } else if (isNumber(data.expire) && data.expire <= Date.now()) {
       this.delete(key)
       return undefined
     } else {
       return data.value
     }
-	}
+  }
 
-	set(key, value, ttl) {
-    ttl = ttl === undefined ? null : ttl
+  set(key, value, ttl) {
+    if (ttl === 0) {
+      ttl = undefined
+    }
     this._cache[key] = {
       value: value,
-      expire: ttl !== null ? Date.now() + ttl : null,
+      expire: isNumber(ttl)
+        ? Date.now() + ttl
+        : undefined
     }
     this.save()
-	}
+  }
 
-	delete(key) {
+  delete(key) {
     let ret = key in this._cache
     delete this._cache[key]
     this.save()
     return ret
-	}
+  }
 
-	clear() {
+  clear() {
     this._cache = {}
     this._lastExpire = Date.now()
     this.save()
-	}
+  }
 
   clearExpire() {
     const now = Date.now()
@@ -69,7 +79,7 @@ module.exports = class KeyvFile {
     }
     Object.keys(this._cache).forEach(key => {
       const data = this._cache[key]
-      if (data.expire !== null && data.expire <= now) {
+      if (isNumber(data.expire) && data.expire <= now) {
         delete this._cache[key]
       }
     })
@@ -77,10 +87,7 @@ module.exports = class KeyvFile {
   }
 
   saveToDisk() {
-    const data = msgpack.encode({
-      cache: this._cache,
-      lastExpire: this._lastExpire,
-    })
+    const data = this._opts.encode({cache: this._cache, lastExpire: this._lastExpire})
     fs.outputFile(this._opts.filename, data, err => {
       if (err) {
         throw err
@@ -91,9 +98,6 @@ module.exports = class KeyvFile {
   save() {
     this.clearExpire()
     this._saveTimer && clearTimeout(this._saveTimer)
-    this._saveTimer = setTimeout(
-      () => this.saveToDisk(),
-      this._opts.writeDelay
-    )
+    this._saveTimer = setTimeout(() => this.saveToDisk(), this._opts.writeDelay)
   }
 }

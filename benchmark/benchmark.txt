@@ -1,0 +1,24 @@
+Start Suit: sample-small
+JSON encode x 933,989 ops/sec ±5.44% (74 runs sampled)
+notepack.io encode x 496,678 ops/sec ±5.35% (75 runs sampled)
+JSON decode x 563,325 ops/sec ±34.98% (46 runs sampled)
+notepack.io decode x 789,288 ops/sec ±4.41% (82 runs sampled)
+Fastest is JSON encode,JSON decode
+
+
+Start Suit: sample-medium
+JSON encode x 579,205 ops/sec ±4.74% (77 runs sampled)
+notepack.io encode x 255,918 ops/sec ±4.74% (79 runs sampled)
+JSON decode x 467,483 ops/sec ±6.88% (75 runs sampled)
+notepack.io decode x 190,122 ops/sec ±3.15% (84 runs sampled)
+Fastest is JSON encode
+
+
+Start Suit: sample-large
+JSON encode x 22,339 ops/sec ±9.47% (58 runs sampled)
+notepack.io encode x 14,410 ops/sec ±1.79% (83 runs sampled)
+JSON decode x 15,164 ops/sec ±2.96% (80 runs sampled)
+notepack.io decode x 10,466 ops/sec ±1.76% (85 runs sampled)
+Fastest is JSON encode
+
+

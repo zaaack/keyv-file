@@ -1,0 +1,13 @@
+{
+  "name": "Hello msgpack!",
+  "type": "message-type-here",
+  "options": {
+    "field-1": 1,
+    "field-2": 2,
+    "field-3": 3,
+    "field-4": 4,
+    "field-5": 5,
+    "last-field": "I'm a string"
+  },
+  "id": "a8bb9ffb92420b1b5c7c8b429430a3eb"
+}
