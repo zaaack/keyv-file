@@ -88,16 +88,25 @@ module.exports = class KeyvFile {
 
   saveToDisk() {
     const data = this._opts.encode({cache: this._cache, lastExpire: this._lastExpire})
-    fs.outputFile(this._opts.filename, data, err => {
-      if (err) {
-        throw err
-      }
+    return new Promise((resolve, reject) => {
+      fs.outputFile(this._opts.filename, data, err => {
+        if (err) {
+          reject(err)
+        } else {
+          resolve()
+        }
+      })
     })
   }
 
   save() {
     this.clearExpire()
     this._saveTimer && clearTimeout(this._saveTimer)
-    this._saveTimer = setTimeout(() => this.saveToDisk(), this._opts.writeDelay)
+    return new Promise((resolve, reject) => {
+      this._saveTimer = setTimeout(
+        () => this.saveToDisk().then(resolve, reject),
+        this._opts.writeDelay
+      )
+    })
   }
 }
