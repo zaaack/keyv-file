@@ -34,16 +34,25 @@ module.exports = class KeyvFile {
     }
   }
 
+  _isExpired(data) {
+    return isNumber(data.expire) && data.expire <= Date.now()
+  }
+
   get(key) {
     const data = this._cache[key]
     if (!data) {
       return undefined
-    } else if (isNumber(data.expire) && data.expire <= Date.now()) {
+    } else if (this._isExpired(data)) {
       this.delete(key)
       return undefined
     } else {
       return data.value
     }
+  }
+
+  keys() {
+    return Object.keys(this._cache)
+                 .filter(key => !this._isExpired(this._cache[key]))
   }
 
   set(key, value, ttl) {
@@ -79,7 +88,7 @@ module.exports = class KeyvFile {
     }
     Object.keys(this._cache).forEach(key => {
       const data = this._cache[key]
-      if (isNumber(data.expire) && data.expire <= now) {
+      if (this._isExpired(data)) {
         delete this._cache[key]
       }
     })

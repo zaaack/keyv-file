@@ -1,7 +1,7 @@
-import test from 'ava';
-import keyvTestSuite from 'keyv-test-suite';
 import Keyv from 'keyv';
 import KeyvStore from './';
+import keyvTestSuite from 'keyv-test-suite';
+import test from 'ava';
 import tk from 'timekeeper'
 
 const store = () => new KeyvStore();
@@ -33,6 +33,7 @@ test('save and clearExpire', async t => {
 
   t.is(await store2.get('aa'), 'bb')
   t.is(await store2.get('aa2'), 'bb')
+  t.deepEqual(store2.keys(), ['aa', 'aa2'])
   store2 = null
 
   await sleep(200)
@@ -41,9 +42,13 @@ test('save and clearExpire', async t => {
   tk.travel(new Date(Date.now() + sec))
   t.is(await store3.get('aa'), 'bb')
 
+  t.deepEqual(store3.keys(), ['aa', 'aa2'])
+
   tk.travel(new Date(Date.now() + 3 * sec))
   t.is(await store3.get('aa'), void 0)
   t.is(await store3.get('aa2'), 'bb')
+
+  t.deepEqual(store3.keys(), ['aa2'])
 
   await store3.set('aa3', 'bb', 5 * hour)
   t.is(await store3.get('aa3'), 'bb')
