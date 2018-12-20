@@ -1,10 +1,12 @@
 import Keyv from 'keyv';
-import KeyvStore from './';
+import KeyvStore from './lib';
 import keyvTestSuite from 'keyv-test-suite';
 import test from 'ava';
 import tk from 'timekeeper'
 
-const store = () => new KeyvStore();
+const store = () => new KeyvStore({
+  filename: `./node_modules/.cache/test-save-${Math.random().toString(36).slice(2)}.json`,
+});
 keyvTestSuite(test, Keyv, store);
 
 function sleep(ms) {
@@ -23,7 +25,7 @@ test('support ttl', t => {
 
 test('save and clearExpire', async t => {
   const config = {
-    filename: './node_modules/.cache/test-save.msgpack',
+    filename: './node_modules/.cache/test-save.json',
     writeDelay: 100,
     expiredCheckDelay: 24 * 1000 * 3600,
   }
@@ -53,9 +55,9 @@ test('save and clearExpire', async t => {
   await store3.set('aa3', 'bb', 5 * hour)
   t.is(await store3.get('aa3'), 'bb')
   tk.travel(new Date(Date.now() + day + hour))
-  t.true('aa3' in store3._cache)
+  t.true(store3._cache.has('aa3'))
   await store3.set('aa4', 1)
-  t.false('aa3' in store3._cache)
+  t.false(store3._cache.has('aa3'))
 
   t.is(await store3.get('aa3'), void 0)
 })
