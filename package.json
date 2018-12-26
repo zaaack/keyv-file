@@ -8,7 +8,8 @@
   "scripts": {
     "build": "tsc",
     "test": "tsc && ava",
-    "preversion": "tsc"
+    "preversion": "yarn test",
+    "postversion": "git add -A && git push origin master --tags"
   },
   "files": [
     "lib"

@@ -36,9 +36,8 @@ test('save and clearExpire', async t => {
   t.is(await store2.get('aa'), 'bb')
   t.is(await store2.get('aa2'), 'bb')
   t.deepEqual(store2.keys(), ['aa', 'aa2'])
+  await store2.saveToDisk()
   store2 = null
-
-  await sleep(200)
   const store3 = new KeyvStore(config)
 
   tk.travel(new Date(Date.now() + sec))
