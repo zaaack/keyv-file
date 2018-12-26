@@ -30,7 +30,7 @@ class KeyvFile<K, V> {
   _lastExpire: number
   _saveTimer?: NodeJS.Timer
 
-  constructor(opts?: typeof defaultOpts) {
+  constructor(opts?: Partial<typeof defaultOpts>) {
     this._opts = {
       ...this._opts,
       ...opts,
