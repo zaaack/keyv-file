@@ -134,7 +134,7 @@ class KeyvFile<K, V> {
       cache,
       lastExpire: this._lastExpire,
     })
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       fs.outputFile(this._opts.filename, data, err => {
         if (err) {
           reject(err)
@@ -148,7 +148,7 @@ class KeyvFile<K, V> {
   save() {
     this.clearExpire()
     this._saveTimer && clearTimeout(this._saveTimer)
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       this._saveTimer = setTimeout(
         () => this.saveToDisk().then(resolve, reject),
         this._opts.writeDelay
