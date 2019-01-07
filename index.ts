@@ -22,13 +22,13 @@ export const defaultOpts = {
   decode: JSON.parse as any as (val: any) => any,
 }
 
-class KeyvFile<K, V> {
+export class KeyvFile<K, V> {
   ttlSupport = true
-  _opts = defaultOpts
-  _lastSave = Date.now()
-  _cache: Map<K, Data<V>>
-  _lastExpire: number
-  _saveTimer?: NodeJS.Timer
+  private _opts = defaultOpts
+  private _lastSave = Date.now()
+  private _cache: Map<K, Data<V>>
+  private _lastExpire: number
+  private _saveTimer?: NodeJS.Timer
 
   constructor(opts?: Partial<typeof defaultOpts>) {
     this._opts = {
@@ -69,6 +69,10 @@ class KeyvFile<K, V> {
     } else {
       return data.value
     }
+  }
+
+  has(key: K) {
+    return typeof this.get(key) !== 'undefined'
   }
 
   keys() {
@@ -156,5 +160,6 @@ class KeyvFile<K, V> {
     })
   }
 }
-module.exports = KeyvFile
 export default KeyvFile
+module.exports = KeyvFile
+module.exports.default = KeyvFile
