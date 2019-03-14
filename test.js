@@ -3,6 +3,8 @@ import KeyvStore from './lib';
 import keyvTestSuite from 'keyv-test-suite';
 import test from 'ava';
 import tk from 'timekeeper'
+import { join } from 'path';
+import { tmpdir } from 'os';
 
 const store = () => new KeyvStore({
   filename: `./node_modules/.cache/test-save-${Math.random().toString(36).slice(2)}.json`,
@@ -25,7 +27,7 @@ test('support ttl', t => {
 
 test('save and clearExpire', async t => {
   const config = {
-    filename: './node_modules/.cache/test-save.json',
+    filename: join(tmpdir(), 'keyv-file', Math.random().toString(36).slice(2), 'test-save.json'),
     writeDelay: 100,
     expiredCheckDelay: 24 * 1000 * 3600,
   }

@@ -22,11 +22,10 @@ export const defaultOpts = {
   decode: JSON.parse as any as (val: any) => any,
 }
 
-export class KeyvFile<K, V> {
+export class KeyvFile<V = any> {
   ttlSupport = true
   private _opts = defaultOpts
-  private _lastSave = Date.now()
-  private _cache: Map<K, Data<V>>
+  private _cache: Map<string, Data<V>>
   private _lastExpire: number
   private _saveTimer?: NodeJS.Timer
 
@@ -53,32 +52,36 @@ export class KeyvFile<K, V> {
     }
   }
 
-  _isExpired(data: Data<V>) {
+  isExpired(data: Data<V>) {
     return isNumber(data.expire) && data.expire <= Date.now()
   }
 
-  get(key: K, defaults: V): V
-  get(key: K): V | undefined
-  get(key: K, defaults?: V): V | undefined {
-    const data = this._cache.get(key)
-    if (!data) {
-      return defaults
-    } else if (this._isExpired(data)) {
-      this.delete(key)
-      return defaults
-    } else {
-      return data.value
+  get<T=V>(key: string, defaults: T): T
+  get<T=V>(key: string): T | undefined
+  get<T=V>(key: string, defaults?: T): T | undefined {
+    try {
+      const data = this._cache.get(key)
+      if (!data) {
+        return defaults
+      } else if (this.isExpired(data)) {
+        this.delete(key)
+        return defaults
+      } else {
+        return data.value as any as T
+      }
+    } catch (error) {
+      console.error(error)
     }
   }
 
-  has(key: K) {
+  has(key: string) {
     return typeof this.get(key) !== 'undefined'
   }
 
   keys() {
-    let keys = [] as K[]
+    let keys = [] as string[]
     for (const key of this._cache.keys()) {
-      if (!this._isExpired(this._cache.get(key)!)) {
+      if (!this.isExpired(this._cache.get(key)!)) {
         keys.push(key)
       }
     }
@@ -90,7 +93,7 @@ export class KeyvFile<K, V> {
    * @param value
    * @param ttl time-to-live, seconds
    */
-  set(key: K, value: V, ttl?: number) {
+  set(key: string, value: V, ttl?: number) {
     if (ttl === 0) {
       ttl = undefined
     }
@@ -103,7 +106,7 @@ export class KeyvFile<K, V> {
     this.save()
   }
 
-  delete(key: K) {
+  delete(key: string) {
     let ret = this._cache.delete(key)
     this.save()
     return ret
@@ -122,7 +125,7 @@ export class KeyvFile<K, V> {
     }
     for (const key of this._cache.keys()) {
       const data = this._cache.get(key)
-      if (this._isExpired(data!)) {
+      if (this.isExpired(data!)) {
         this._cache.delete(key)
       }
     }
@@ -130,7 +133,7 @@ export class KeyvFile<K, V> {
   }
 
   saveToDisk() {
-    const cache = [] as [K, Data<V>][]
+    const cache = [] as [string, Data<V>][]
     for (const [key, val] of this._cache) {
       cache.push([key, val])
     }
@@ -148,16 +151,23 @@ export class KeyvFile<K, V> {
       })
     })
   }
-
+  private _savePromise?: Promise<any>
   save() {
     this.clearExpire()
-    this._saveTimer && clearTimeout(this._saveTimer)
-    return new Promise<void>((resolve, reject) => {
+    if (this._savePromise) {
+      return this._savePromise
+    }
+    this._savePromise = new Promise<void>((resolve, reject) => {
       this._saveTimer = setTimeout(
-        () => this.saveToDisk().then(resolve, reject),
+        () => {
+          this.saveToDisk().then(resolve, reject).then(() => {
+            this._savePromise = void 0
+          })
+        },
         this._opts.writeDelay
       )
     })
+    return this._savePromise
   }
 }
 export default KeyvFile
