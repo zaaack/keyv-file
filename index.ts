@@ -93,12 +93,12 @@ export class KeyvFile<V = any> {
    * @param value
    * @param ttl time-to-live, seconds
    */
-  set(key: string, value: V, ttl?: number) {
+  set<T = V>(key: string, value: T, ttl?: number) {
     if (ttl === 0) {
       ttl = undefined
     }
     this._cache.set(key, {
-      value: value,
+      value: value as any,
       expire: isNumber(ttl)
         ? Date.now() + ttl
         : undefined
@@ -106,10 +106,10 @@ export class KeyvFile<V = any> {
     this.save()
   }
 
-  delete(key: string) {
+  delete<T = V>(key: string): T {
     let ret = this._cache.delete(key)
     this.save()
-    return ret
+    return ret as any as T
   }
 
   clear() {
