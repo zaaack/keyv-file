@@ -21,7 +21,19 @@ export const defaultOpts = {
   encode: JSON.stringify as any as (val: any) => any,
   decode: JSON.parse as any as (val: any) => any,
 }
-
+export function makeField<T = any>(kv: KeyvFile, key: string, defaults?: T) {
+  return {
+    get(def = defaults) {
+      return kv.get(key, def)
+    },
+    set(val?: T) {
+      return kv.set(key, val)
+    },
+    delete() {
+      return kv.delete(key)
+    },
+  }
+}
 export class KeyvFile<V = any> {
   ttlSupport = true
   private _opts = defaultOpts
