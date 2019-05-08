@@ -17,6 +17,7 @@ npm install --save keyv keyv-file
 
 ## Usage
 
+### Using with keyv
 ```js
 const Keyv = require('keyv')
 const KeyvFile = require('keyv-file')
@@ -34,6 +35,28 @@ const customKeyv = new Keyv({
     decode: JSON.parse // deserialize function
   })
 })
+```
+
+### Using directly
+
+```ts
+import KeyvFile, { makeField } from 'keyv-file'
+
+class Kv extends KeyvFile {
+  constructor() {
+    super({
+      filename: './db.json'
+    })
+  }
+  someField = makeField(this, 'field_key')
+}
+
+export const kv = new Kv
+
+kv.someField.get(1) // empty return default value 1
+kv.someField.set(2) // set value 2
+kv.someField.get() // return saved value 2
+kv.someField.delete() // delete field
 ```
 
 ## License
