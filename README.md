@@ -20,7 +20,7 @@ npm install --save keyv keyv-file
 ### Using with keyv
 ```js
 const Keyv = require('keyv')
-const KeyvFile = require('keyv-file')
+const KeyvFile = require('keyv-file').KeyvFile
 
 const keyv = new Keyv({
   store: new KeyvFile()

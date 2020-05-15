@@ -183,5 +183,3 @@ export class KeyvFile<V = any> {
   }
 }
 export default KeyvFile
-module.exports = KeyvFile
-module.exports.default = KeyvFile
