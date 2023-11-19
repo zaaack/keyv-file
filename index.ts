@@ -21,25 +21,30 @@ export const defaultOpts = {
   encode: JSON.stringify as any as (val: any) => any,
   decode: JSON.parse as any as (val: any) => any,
 }
-export function makeField<T = any>(kv: KeyvFile, key: string, defaults?: T) {
-  return {
-    get(def = defaults) {
-      return kv.get(key, def)
-    },
-    set(val?: T) {
-      return kv.set(key, val)
-    },
-    delete() {
-      return kv.delete(key)
-    },
+
+export class Field<T, D extends T | void> {
+  constructor(protected kv: KeyvFile, protected key: string, protected defaults?: D) {}
+
+  get(): D
+  get(def: D): D
+  get(def = this.defaults) {
+    return this.kv.get(this.key, def)
   }
+  set(val?: T) {
+    return this.kv.set(this.key, val)
+  }
+  delete() {
+    return this.kv.delete(this.key)
+  }
+}
+export function makeField<T = any>(kv: KeyvFile, key: string, defaults?: T) {
+  return new Field(kv, key, defaults)
 }
 export class KeyvFile<V = any> {
   ttlSupport = true
   private _opts = defaultOpts
   private _cache: Map<string, Data<V>>
   private _lastExpire: number
-  private _saveTimer?: NodeJS.Timer
 
   constructor(opts?: Partial<typeof defaultOpts>) {
     this._opts = {
@@ -69,8 +74,8 @@ export class KeyvFile<V = any> {
   }
 
   get<T=V>(key: string, defaults: T): T
-  get<T=V>(key: string): T | undefined
-  get<T=V>(key: string, defaults?: T): T | undefined {
+  get<T=V>(key: string): T | void
+  get<T=V>(key: string, defaults?: T): T | void {
     try {
       const data = this._cache.get(key)
       if (!data) {
@@ -115,19 +120,19 @@ export class KeyvFile<V = any> {
         ? Date.now() + ttl
         : undefined
     })
-    this.save()
+    return this.save()
   }
 
-  delete<T = V>(key: string): T {
+  delete(key: string): boolean {
     let ret = this._cache.delete(key)
     this.save()
-    return ret as any as T
+    return ret
   }
 
   clear() {
     this._cache = new Map()
     this._lastExpire = Date.now()
-    this.save()
+    return this.save()
   }
 
   clearExpire() {
@@ -170,11 +175,11 @@ export class KeyvFile<V = any> {
       return this._savePromise
     }
     this._savePromise = new Promise<void>((resolve, reject) => {
-      this._saveTimer = setTimeout(
+      setTimeout(
         () => {
-          this.saveToDisk().then(resolve, reject).then(() => {
+          this.saveToDisk().then(() => {
             this._savePromise = void 0
-          })
+          }).then(resolve, reject)
         },
         this._opts.writeDelay
       )
