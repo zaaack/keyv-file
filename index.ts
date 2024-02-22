@@ -30,8 +30,8 @@ export class Field<T, D extends T | void> {
   get(def = this.defaults) {
     return this.kv.get(this.key, def)
   }
-  set(val?: T) {
-    return this.kv.set(this.key, val)
+  set(val: T, ttl?: number) {
+    return this.kv.set(this.key, val, ttl)
   }
   delete() {
     return this.kv.delete(this.key)
