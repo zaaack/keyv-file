@@ -22,11 +22,11 @@ export const defaultOpts = {
   decode: JSON.parse as any as (val: any) => any,
 }
 
-export class Field<T> {
-  constructor(protected kv: KeyvFile, protected key: string, protected defaults?: T) {}
+export class Field<T, D extends T|void=T|void> {
+  constructor(protected kv: KeyvFile, protected key: string, protected defaults?: D) {}
 
-  get(): T | void
-  get(def: T): T
+  get(): D
+  get(def: D): D
   get(def = this.defaults) {
     return this.kv.get(this.key, def)
   }
@@ -37,8 +37,8 @@ export class Field<T> {
     return this.kv.delete(this.key)
   }
 }
-export function makeField<T = any>(kv: KeyvFile, key: string, defaults?: T) {
-  return new Field<T>(kv, key, defaults)
+export function makeField<T = any, D extends T|void = T|void>(kv: KeyvFile, key: string, defaults?: D) {
+  return new Field<T, D>(kv, key, defaults)
 }
 export class KeyvFile<V = any> {
   ttlSupport = true
