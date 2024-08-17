@@ -37,6 +37,8 @@ export class Field<T, D extends T|void=T|void> {
     return this.kv.delete(this.key)
   }
 }
+
+export function makeField<T = any, D=T>(kv: KeyvFile, key: string, defaults: T): Field<T, T>
 export function makeField<T = any, D extends T|void = T|void>(kv: KeyvFile, key: string, defaults?: D) {
   return new Field<T, D>(kv, key, defaults)
 }
