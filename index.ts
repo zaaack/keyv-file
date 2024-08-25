@@ -7,6 +7,7 @@ import {type KeyvStoreAdapter, type StoredData} from 'keyv';
 
 export interface Options {
     deserialize: (val: any) => any;
+    dialect: string
     expiredCheckDelay: number; // milliseconds
     filename: string;
     serialize: (val: any) => any;
@@ -16,6 +17,7 @@ export interface Options {
 
 export const defaultOpts: Options = {
     deserialize: JSON.parse as any as (val: any) => any,
+    dialect: 'redis',
     expiredCheckDelay: 24 * 3600 * 1000, // ms
     filename: `${os.tmpdir()}/keyv-file/default-rnd-${Math.random().toString(36).slice(2)}.json`,
     serialize: JSON.stringify as any as (val: any) => any,
@@ -58,10 +60,17 @@ class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
 
     private _getKeyName = (key: string): string => {
         if (this.namespace) {
-            return `${this.namespace}:${key}`
+            return `${this.namespace}:${key}`;
         }
-        return key
+        return key;
     };
+
+    private _removeNamespaceFromKey = (key: string): string => {
+        if (this.namespace) {
+            return key.replace(`${this.namespace}:`, '');
+        }
+        return key;
+    }
 
     public async get<Value>(key: string): Promise<StoredData<Value> | undefined> {
         try {
@@ -120,9 +129,18 @@ class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
         return this.save()
     }
 
-    // async * iterator(namespace?: string) {
-    //   return this._cache;
-    // }
+    public async * iterator(namespace?: string) {
+        for (const [key, data] of this._cache) {
+            // Filter by namespace if provided
+            if (key === undefined) {
+                continue;
+            }
+            if (!namespace || key.includes(namespace)) {
+                const resolvedValue = data.value;
+                yield [this._removeNamespaceFromKey(key), resolvedValue];
+            }
+        }
+    }
 
     public async has(key: string): Promise<boolean> {
         return this._cache.has(this._getKeyName(key));
