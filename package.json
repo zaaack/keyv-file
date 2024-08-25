@@ -7,7 +7,7 @@
   "types": "./lib/index",
   "scripts": {
     "build": "tsc",
-    "test": "tsc && ava",
+    "test": "tsc && vitest",
     "preversion": "pnpm test",
     "postversion": "git add -A && git push origin master --tags"
   },
@@ -32,13 +32,14 @@
   },
   "homepage": "https://github.com/zaaack/keyv-file#readme",
   "devDependencies": {
+    "@keyv/test-suite": "^2.0.1",
     "@types/debug": "^0.0.31",
     "@types/fs-extra": "^5.0.4",
     "@types/node": "^22.2.0",
-    "ava": "^0.21.0",
     "benchmark": "^2.1.4",
-    "keyv": "^1.0.4",
-    "keyv-test-suite": "^1.5.0"
+    "keyv": "^5.0.1",
+    "timekeeper": "^2.3.1",
+    "vitest": "^2.0.5"
   },
   "dependencies": {
     "debug": "^4.1.1",

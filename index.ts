@@ -2,191 +2,190 @@
 
 import * as os from 'os'
 import * as fs from 'fs-extra'
-import Debug from 'debug'
+import EventEmitter from 'events';
+import {type KeyvStoreAdapter, type StoredData} from 'keyv';
 
-const debug = Debug('keyv-file')
+export interface Options {
+    deserialize: (val: any) => any;
+    expiredCheckDelay: number; // milliseconds
+    filename: string;
+    serialize: (val: any) => any;
+    writeDelay: number; // milliseconds
+
+}
+
+export const defaultOpts: Options = {
+    deserialize: JSON.parse as any as (val: any) => any,
+    expiredCheckDelay: 24 * 3600 * 1000, // ms
+    filename: `${os.tmpdir()}/keyv-file/default-rnd-${Math.random().toString(36).slice(2)}.json`,
+    serialize: JSON.stringify as any as (val: any) => any,
+    writeDelay: 100, // ms
+}
 
 function isNumber(val: any): val is number {
-  return typeof val === 'number'
-}
-export interface Data<V> {
-  expire?: number
-  value: V
+    return typeof val === 'number'
 }
 
-export const defaultOpts = {
-  filename: `${os.tmpdir()}/keyv-file/default-rnd-${Math.random().toString(36).slice(2)}.json`,
-  expiredCheckDelay: 24 * 3600 * 1000, // ms
-  writeDelay: 100, // ms
-  encode: JSON.stringify as any as (val: any) => any,
-  decode: JSON.parse as any as (val: any) => any,
-}
+class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
+    public ttlSupport = true;
+    public namespace?: string;
+    public opts: Options;
+    private _cache: Map<string, any>;
+    private _lastExpire: number;
 
-export class Field<T, D extends T|void=T|void> {
-  constructor(protected kv: KeyvFile, protected key: string, protected defaults?: D) {}
+    constructor(options?: Options) {
+        super();
+        this.opts = Object.assign(defaultOpts, options);
 
-  get(): D
-  get(def: D): D
-  get(def = this.defaults) {
-    return this.kv.get(this.key, def)
-  }
-  set(val: T, ttl?: number) {
-    return this.kv.set(this.key, val, ttl)
-  }
-  delete() {
-    return this.kv.delete(this.key)
-  }
-}
-
-export function makeField<T = any, D=T>(kv: KeyvFile, key: string, defaults: T): Field<T, T>
-export function makeField<T = any, D extends T|void = T|void>(kv: KeyvFile, key: string, defaults?: D) {
-  return new Field<T, D>(kv, key, defaults)
-}
-export class KeyvFile<V = any> {
-  ttlSupport = true
-  private _opts = defaultOpts
-  private _cache: Map<string, Data<V>>
-  private _lastExpire: number
-
-  constructor(opts?: Partial<typeof defaultOpts>) {
-    this._opts = {
-      ...this._opts,
-      ...opts,
-    }
-    try {
-      const data = this._opts.decode(fs.readFileSync(this._opts.filename, 'utf8'))
-      if (!Array.isArray(data.cache)) {
-        const _cache = data.cache
-        data.cache = []
-        for (const key in _cache) {
-          data.cache.push([key, _cache[key]])
+        try {
+            const data = this.opts.deserialize(fs.readFileSync(this.opts.filename, 'utf8'))
+            if (!Array.isArray(data.cache)) {
+                const _cache = data.cache
+                data.cache = [];
+                for (const key in _cache) {
+                    if (_cache.hasOwnProperty(key)) {
+                        data.cache.push([key, _cache[key]])
+                    }
+                }
+            }
+            this._cache = new Map(data.cache)
+            this._lastExpire = data.lastExpire
+        } catch (e) {
+            this._cache = new Map()
+            this._lastExpire = Date.now()
         }
-      }
-      this._cache = new Map(data.cache)
-      this._lastExpire = data.lastExpire
-    } catch (e) {
-      debug(e)
-      this._cache = new Map()
-      this._lastExpire = Date.now()
     }
-  }
 
-  isExpired(data: Data<V>) {
-    return isNumber(data.expire) && data.expire <= Date.now()
-  }
-
-  get<T=V>(key: string, defaults: T): T
-  get<T=V>(key: string): T | void
-  get<T=V>(key: string, defaults?: T): T | void {
-    try {
-      const data = this._cache.get(key)
-      if (!data) {
-        return defaults
-      } else if (this.isExpired(data)) {
-        this.delete(key)
-        return defaults
-      } else {
-        return data.value as any as T
-      }
-    } catch (error) {
-      console.error(error)
-    }
-  }
-
-  has(key: string) {
-    return typeof this.get(key) !== 'undefined'
-  }
-
-  keys() {
-    let keys = [] as string[]
-    for (const key of this._cache.keys()) {
-      if (!this.isExpired(this._cache.get(key)!)) {
-        keys.push(key)
-      }
-    }
-    return keys
-  }
-  /**
-   *
-   * @param key
-   * @param value
-   * @param ttl time-to-live, seconds
-   */
-  set<T = V>(key: string, value: T, ttl?: number) {
-    if (ttl === 0) {
-      ttl = undefined
-    }
-    this._cache.set(key, {
-      value: value as any,
-      expire: isNumber(ttl)
-        ? Date.now() + ttl
-        : undefined
-    })
-    return this.save()
-  }
-
-  delete(key: string): boolean {
-    let ret = this._cache.delete(key)
-    this.save()
-    return ret
-  }
-
-  clear() {
-    this._cache = new Map()
-    this._lastExpire = Date.now()
-    return this.save()
-  }
-
-  clearExpire() {
-    const now = Date.now()
-    if (now - this._lastExpire <= this._opts.expiredCheckDelay) {
-      return
-    }
-    for (const key of this._cache.keys()) {
-      const data = this._cache.get(key)
-      if (this.isExpired(data!)) {
-        this._cache.delete(key)
-      }
-    }
-    this._lastExpire = now
-  }
-
-  saveToDisk() {
-    const cache = [] as [string, Data<V>][]
-    for (const [key, val] of this._cache) {
-      cache.push([key, val])
-    }
-    const data = this._opts.encode({
-      cache,
-      lastExpire: this._lastExpire,
-    })
-    return new Promise<void>((resolve, reject) => {
-      fs.outputFile(this._opts.filename, data, err => {
-        if (err) {
-          reject(err)
-        } else {
-          resolve()
+    private _getKeyName = (key: string): string => {
+        if (this.namespace) {
+            return `${this.namespace}:${key}`
         }
-      })
-    })
-  }
-  private _savePromise?: Promise<any>
-  save() {
-    this.clearExpire()
-    if (this._savePromise) {
-      return this._savePromise
+        return key
+    };
+
+    public async get<Value>(key: string): Promise<StoredData<Value> | undefined> {
+        try {
+            const data = this._cache.get(this._getKeyName(key));
+            if (!data) {
+                return undefined;
+            } else if (this.isExpired(data)) {
+                await this.delete(this._getKeyName(key))
+                return undefined;
+            } else {
+                return data.value as StoredData<Value>
+            }
+        } catch (error) {
+            // do nothing;
+        }
     }
-    this._savePromise = new Promise<void>((resolve, reject) => {
-      setTimeout(
-        () => {
-          this.saveToDisk().then(() => {
-            this._savePromise = void 0
-          }).then(resolve, reject)
-        },
-        this._opts.writeDelay
-      )
-    })
-    return this._savePromise
-  }
+
+    public async getMany<Value>(keys: string[]): Promise<Array<StoredData<Value | undefined>>> {
+        const results = await Promise.all(
+            keys.map(async (key) => {
+                const value = await this.get(key);
+                return value as StoredData<Value | undefined>;
+            })
+        );
+        return results;
+    }
+
+    public async set(key: string, value: any, ttl?: number) {
+        if (ttl === 0) {
+            ttl = undefined
+        }
+        this._cache.set(this._getKeyName(key), {
+            expire: isNumber(ttl)
+                ? Date.now() + ttl
+                : undefined,
+            value: value as any
+        })
+        return this.save()
+    }
+
+    public async delete(key: string) {
+        const ret = this._cache.delete(this._getKeyName(key));
+        await this.save();
+        return ret;
+    }
+
+    public async deleteMany(keys: string[]): Promise<boolean> {
+        const deletePromises:Promise<boolean>[] = keys.map((key) => this.delete(key));
+        const results = await Promise.all(deletePromises);
+        return results.every((result) => result);
+    }
+
+    public async clear() {
+        this._cache = new Map()
+        this._lastExpire = Date.now()
+        return this.save()
+    }
+
+    // async * iterator(namespace?: string) {
+    //   return this._cache;
+    // }
+
+    public async has(key: string): Promise<boolean> {
+        return this._cache.has(this._getKeyName(key));
+    }
+
+    private isExpired(data: any) {
+        return isNumber(data.expire) && data.expire <= Date.now()
+    }
+
+    private clearExpire() {
+        const now = Date.now()
+        if (now - this._lastExpire <= this.opts.expiredCheckDelay) {
+            return
+        }
+        for (const key of this._cache.keys()) {
+            const data = this._cache.get(key)
+            if (this.isExpired(data!)) {
+                this._cache.delete(key)
+            }
+        }
+        this._lastExpire = now
+    }
+
+    private saveToDisk() {
+        const cache = [] as [string, any][];
+        for (const [key, val] of this._cache) {
+            cache.push([key, val]);
+        }
+        const data = this.opts.serialize({
+            cache,
+            lastExpire: this._lastExpire,
+        })
+        return new Promise<void>((resolve, reject) => {
+            fs.outputFile(this.opts.filename, data, (err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+    }
+
+    private _savePromise?: Promise<any>
+
+    private save() {
+        this.clearExpire();
+        if (this._savePromise) {
+            return this._savePromise;
+        }
+        this._savePromise = new Promise<void>((resolve, reject) => {
+            setTimeout(
+                () => {
+                    this.saveToDisk().then(() => {
+                        this._savePromise = void 0;
+                    }).then(resolve, reject);
+                },
+                this.opts.writeDelay
+            )
+        })
+        return this._savePromise;
+    }
+
 }
-export default KeyvFile
+
+export default KeyvFile;
