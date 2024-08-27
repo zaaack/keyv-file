@@ -12,7 +12,6 @@ export interface Options {
     filename: string;
     serialize: (val: any) => any;
     writeDelay: number; // milliseconds
-
 }
 
 export const defaultOpts: Options = {
@@ -28,7 +27,7 @@ function isNumber(val: any): val is number {
     return typeof val === 'number'
 }
 
-class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
+export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
     public ttlSupport = true;
     public namespace?: string;
     public opts: Options;
