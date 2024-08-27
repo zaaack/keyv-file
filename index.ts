@@ -36,7 +36,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
 
     constructor(options?: Options) {
         super();
-        this.opts = Object.assign(defaultOpts, options);
+        this.opts = Object.assign({}, defaultOpts, options);
 
         try {
             const data = this.opts.deserialize(fs.readFileSync(this.opts.filename, 'utf8'))
@@ -201,6 +201,10 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
             )
         })
         return this._savePromise;
+    }
+
+    public disconnect(): Promise<void> {
+        return Promise.resolve();
     }
 
 }
