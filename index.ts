@@ -3,7 +3,7 @@
 import * as os from 'os'
 import * as fs from 'fs-extra'
 import EventEmitter from 'events';
-import {type KeyvStoreAdapter, type StoredData} from 'keyv';
+import type {KeyvStoreAdapter, StoredData} from 'keyv';
 
 export interface Options {
     deserialize: (val: any) => any;
@@ -193,9 +193,9 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
         this._savePromise = new Promise<void>((resolve, reject) => {
             setTimeout(
                 () => {
-                    this.saveToDisk().then(() => {
-                        this._savePromise = void 0;
-                    }).then(resolve, reject);
+                    this.saveToDisk().then(resolve, reject).finally(() => {
+                        this._savePromise = void 0
+                    });
                 },
                 this.opts.writeDelay
             )
