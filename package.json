@@ -1,6 +1,6 @@
 {
   "name": "keyv-file",
-  "version": "0.3.4",
+  "version": "5.0.0",
   "description": "File storage adapter for Keyv, using msgpack to serialize data fast and small.",
   "main": "lib/index.js",
   "typings": "lib/index",
