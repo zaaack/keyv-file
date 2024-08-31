@@ -27,11 +27,16 @@ function isNumber(val: any): val is number {
     return typeof val === 'number'
 }
 
+export interface WrappedValue<T=any> {
+    value: T,
+    expire?: number
+}
+
 export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
     public ttlSupport = true;
     public namespace?: string;
     public opts: Options;
-    private _cache: Map<string, any>;
+    private _cache: Map<string, WrappedValue>;
     private _lastExpire: number;
 
     constructor(options?: Partial<Options>) {
@@ -118,7 +123,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
         return this._cache.has(key);
     }
 
-    private isExpired(data: any) {
+    private isExpired(data: WrappedValue) {
         return isNumber(data.expire) && data.expire <= Date.now()
     }
 
@@ -179,7 +184,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
     public disconnect(): Promise<void> {
         return Promise.resolve();
     }
-    
+
     // @ts-ignore
     public * iterator(namespace?: string) {
         for (const [key, data] of this._cache.entries()) {
