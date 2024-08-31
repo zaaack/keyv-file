@@ -18,7 +18,7 @@ export const defaultOpts: Options = {
     deserialize: JSON.parse as any as (val: any) => any,
     dialect: 'redis',
     expiredCheckDelay: 24 * 3600 * 1000, // ms
-    filename: `${os.tmpdir()}/keyv-file/default-rnd-${Math.random().toString(36).slice(2)}.json`,
+    filename: `${os.tmpdir()}/keyv-file/default.json`,
     serialize: JSON.stringify as any as (val: any) => any,
     writeDelay: 100, // ms
 }
@@ -34,7 +34,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
     private _cache: Map<string, any>;
     private _lastExpire: number;
 
-    constructor(options?: Options) {
+    constructor(options?: Partial<Options>) {
         super();
         this.opts = Object.assign({}, defaultOpts, options);
 
