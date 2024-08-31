@@ -57,27 +57,13 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
         }
     }
 
-    private _getKeyName = (key: string): string => {
-        if (this.namespace) {
-            return `${this.namespace}:${key}`;
-        }
-        return key;
-    };
-
-    private _removeNamespaceFromKey = (key: string): string => {
-        if (this.namespace) {
-            return key.replace(`${this.namespace}:`, '');
-        }
-        return key;
-    }
-
     public async get<Value>(key: string): Promise<StoredData<Value> | undefined> {
         try {
-            const data = this._cache.get(this._getKeyName(key));
+            const data = this._cache.get(key);
             if (!data) {
                 return undefined;
             } else if (this.isExpired(data)) {
-                await this.delete(this._getKeyName(key))
+                await this.delete(key)
                 return undefined;
             } else {
                 return data.value as StoredData<Value>
@@ -101,7 +87,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
         if (ttl === 0) {
             ttl = undefined
         }
-        this._cache.set(this._getKeyName(key), {
+        this._cache.set(key, {
             expire: isNumber(ttl)
                 ? Date.now() + ttl
                 : undefined,
@@ -111,7 +97,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
     }
 
     public async delete(key: string) {
-        const ret = this._cache.delete(this._getKeyName(key));
+        const ret = this._cache.delete(key);
         await this.save();
         return ret;
     }
@@ -128,21 +114,8 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
         return this.save()
     }
 
-    public async * iterator(namespace?: string) {
-        for (const [key, data] of this._cache) {
-            // Filter by namespace if provided
-            if (key === undefined) {
-                continue;
-            }
-            if (!namespace || key.includes(namespace)) {
-                const resolvedValue = data.value;
-                yield [this._removeNamespaceFromKey(key), resolvedValue];
-            }
-        }
-    }
-
     public async has(key: string): Promise<boolean> {
-        return this._cache.has(this._getKeyName(key));
+        return this._cache.has(key);
     }
 
     private isExpired(data: any) {
@@ -206,6 +179,22 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
     public disconnect(): Promise<void> {
         return Promise.resolve();
     }
+    
+    // @ts-ignore
+    public * iterator(namespace?: string) {
+        for (const [key, data] of this._cache.entries()) {
+            if (key === undefined) {
+                continue;
+            }
+            // Filter by namespace if provided
+            if (!namespace || key.includes(namespace)) {
+                // faking async to be interface compliant
+                yield Promise.resolve([key, data.value]);
+            }
+        }
+    }
+
+
 
 }
 
