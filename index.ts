@@ -3,7 +3,7 @@
 import * as os from 'os'
 import * as fs from 'fs-extra'
 import EventEmitter from 'events';
-import type {KeyvStoreAdapter, StoredData} from 'keyv';
+import type { KeyvStoreAdapter, StoredData } from 'keyv';
 
 export interface Options {
     deserialize: (val: any) => any;
@@ -27,7 +27,7 @@ function isNumber(val: any): val is number {
     return typeof val === 'number'
 }
 
-export interface WrappedValue<T=any> {
+export interface WrappedValue<T = any> {
     value: T,
     expire?: number
 }
@@ -108,7 +108,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
     }
 
     public async deleteMany(keys: string[]): Promise<boolean> {
-        const deletePromises:Promise<boolean>[] = keys.map((key) => this.delete(key));
+        const deletePromises: Promise<boolean>[] = keys.map((key) => this.delete(key));
         const results = await Promise.all(deletePromises);
         return results.every((result) => result);
     }
@@ -186,15 +186,14 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
     }
 
     // @ts-ignore
-    public * iterator(namespace?: string) {
+    public * iterator(namespace?: string): AsyncGenerator<Array<string | Awaited<Value> | undefined>> {
         for (const [key, data] of this._cache.entries()) {
             if (key === undefined) {
                 continue;
             }
             // Filter by namespace if provided
             if (!namespace || key.includes(namespace)) {
-                // faking async to be interface compliant
-                yield Promise.resolve([key, data.value]);
+                yield [key, await Promise.resolve(data.value)];
             }
         }
     }
