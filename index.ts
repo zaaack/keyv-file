@@ -4,22 +4,25 @@ import * as os from 'os'
 import * as fs from 'fs-extra'
 import EventEmitter from 'events';
 import type { KeyvStoreAdapter, StoredData } from 'keyv';
+import {defaultDeserialize, defaultSerialize} from '@keyv/serialize';
 
 export interface Options {
-    deserialize: (val: any) => any;
+    deserialize: (val: string) => any;
     dialect: string
-    expiredCheckDelay: number; // milliseconds
+    /** milliseconds */
+    expiredCheckDelay: number;
     filename: string;
-    serialize: (val: any) => any;
-    writeDelay: number; // milliseconds
+    serialize: (val: any) => string;
+    /** milliseconds */
+    writeDelay: number;
 }
 
 export const defaultOpts: Options = {
-    deserialize: JSON.parse as any as (val: any) => any,
+    deserialize: defaultDeserialize,
     dialect: 'redis',
     expiredCheckDelay: 24 * 3600 * 1000, // ms
     filename: `${os.tmpdir()}/keyv-file/default.json`,
-    serialize: JSON.stringify as any as (val: any) => any,
+    serialize: defaultSerialize,
     writeDelay: 100, // ms
 }
 
@@ -185,15 +188,14 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
         return Promise.resolve();
     }
 
-    // @ts-ignore
-    public * iterator(namespace?: string): AsyncGenerator<Array<string | Awaited<Value> | undefined>> {
+    public async * iterator(namespace?: string) {
         for (const [key, data] of this._cache.entries()) {
             if (key === undefined) {
                 continue;
             }
             // Filter by namespace if provided
             if (!namespace || key.includes(namespace)) {
-                yield [key, await Promise.resolve(data.value)];
+                yield [key, data.value];
             }
         }
     }
