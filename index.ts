@@ -205,3 +205,36 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
 }
 
 export default KeyvFile;
+
+export class Field<T, D extends T | void = T | void> {
+  constructor(
+    protected kv: KeyvFile,
+    protected key: string,
+    protected defaults?: D
+  ) {}
+
+  get(): Promise<D>
+  get(def: D): Promise<D>
+  async get(def = this.defaults) {
+    return (await this.kv.get(this.key)) ?? def
+  }
+  set(val: T, ttl?: number) {
+    return this.kv.set(this.key, val, ttl)
+  }
+  delete() {
+    return this.kv.delete(this.key)
+  }
+}
+
+export function makeField<T = any, D = T>(
+  kv: KeyvFile,
+  key: string,
+  defaults: T
+): Field<T, T>
+export function makeField<T = any, D extends T | void = T | void>(
+  kv: KeyvFile,
+  key: string,
+  defaults?: D
+) {
+  return new Field<T, D>(kv, key, defaults)
+}
