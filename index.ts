@@ -106,7 +106,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
 
     public async delete(key: string) {
         const ret = this._cache.delete(key);
-        await this.save();
+        await this.save().catch(() => {});
         return ret;
     }
 
@@ -119,7 +119,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
     public async clear() {
         this._cache = new Map()
         this._lastExpire = Date.now()
-        return this.save()
+        return this.save().catch(() => {})
     }
 
     public async has(key: string): Promise<boolean> {
@@ -156,6 +156,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
         return new Promise<void>((resolve, reject) => {
             fs.outputFile(this.opts.filename, data, (err) => {
                 if (err) {
+                    this.emit('error', new Error(`Error saving to disk: ${err.message}`));
                     reject(err);
                 } else {
                     resolve();
