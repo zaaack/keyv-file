@@ -15,7 +15,8 @@ export interface Options {
   serialize: (val: any) => string
   /** milliseconds */
   writeDelay: number
-  lock: boolean
+  /** create lock file and check if exists */
+  checkFileLock: boolean
 }
 
 export const defaultOpts: Options = {
@@ -25,7 +26,7 @@ export const defaultOpts: Options = {
   filename: `${os.tmpdir()}/keyv-file/default.json`,
   serialize: defaultSerialize,
   writeDelay: 100, // ms
-  lock: true,
+  checkFileLock: false,
 }
 
 function isNumber(val: any): val is number {
@@ -47,7 +48,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
   constructor(options?: Partial<Options>) {
     super()
     this.opts = Object.assign({}, defaultOpts, options)
-    if (this.opts.lock) {
+    if (this.opts.checkFileLock) {
       this.checkFileLock()
     }
     try {
