@@ -150,7 +150,8 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
   }
 
   public async has(key: string): Promise<boolean> {
-    return this._cache.has(key)
+    const value = await this.get(key)
+    return value !== undefined
   }
 
   private isExpired(data: WrappedValue) {
