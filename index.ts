@@ -49,7 +49,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
     super()
     this.opts = Object.assign({}, defaultOpts, options)
     if (this.opts.checkFileLock) {
-      this.checkFileLock()
+      this.acquireFileLock()
     }
     try {
       const data = this.opts.deserialize(
@@ -72,22 +72,30 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
     }
   }
 
-  checkFileLock() {
+  private get _lockFile() {
+    return this.opts.filename + '.lock'
+  }
+
+  acquireFileLock() {
     try {
-      const lock = this.opts.filename + '.lock'
-      let fd = fs.openSync(lock, 'wx')
+      let fd = fs.openSync(this._lockFile, "wx");
       fs.closeSync(fd)
 
       process.on('SIGINT', () => {
+        fs.unlinkSync(this._lockFile);
         process.exit(0)
       })
       process.on('exit', () => {
-        fs.unlinkSync(lock)
+        this.releaseFileLock()
       })
     } catch (error) {
       console.error(`[keyv-file] There is another process using this file`)
       throw error
     }
+  }
+
+  releaseFileLock() {
+    fs.unlinkSync(this._lockFile);
   }
 
   public async get<Value>(key: string): Promise<StoredData<Value> | undefined> {
