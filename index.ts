@@ -3,7 +3,7 @@
 import * as os from 'os'
 import * as fs from 'fs-extra'
 import EventEmitter from 'events'
-import type { KeyvStoreAdapter, StoredData } from 'keyv'
+import type { Keyv, KeyvStoreAdapter, StoredData } from 'keyv'
 import { defaultDeserialize, defaultSerialize } from '@keyv/serialize'
 
 export interface Options {
@@ -52,9 +52,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
       this.acquireFileLock()
     }
     try {
-      const data = this.opts.deserialize(
-        fs.readFileSync(this.opts.filename, 'utf8')
-      )
+      const data = this.opts.deserialize(fs.readFileSync(this.opts.filename, 'utf8'))
       if (!Array.isArray(data.cache)) {
         const _cache = data.cache
         data.cache = []
@@ -78,11 +76,11 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
 
   acquireFileLock() {
     try {
-      let fd = fs.openSync(this._lockFile, "wx");
+      let fd = fs.openSync(this._lockFile, 'wx')
       fs.closeSync(fd)
 
       process.on('SIGINT', () => {
-        fs.unlinkSync(this._lockFile);
+        this.releaseFileLock()
         process.exit(0)
       })
       process.on('exit', () => {
@@ -95,33 +93,39 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
   }
 
   releaseFileLock() {
-    fs.unlinkSync(this._lockFile);
+    try {
+      fs.unlinkSync(this._lockFile)
+    } catch {
+      //pass
+    }
   }
 
   public async get<Value>(key: string): Promise<StoredData<Value> | undefined> {
+    return Promise.resolve(this.getSync(key))
+  }
+
+  public getSync<Value>(key: string): Value | undefined {
     try {
       const data = this._cache.get(key)
       if (!data) {
         return undefined
       } else if (this.isExpired(data)) {
-        await this.delete(key)
+        this.delete(key)
         return undefined
       } else {
-        return data.value as StoredData<Value>
+        return data.value as Value
       }
     } catch (error) {
       // do nothing;
     }
   }
 
-  public async getMany<Value>(
-    keys: string[]
-  ): Promise<Array<StoredData<Value | undefined>>> {
+  public async getMany<Value>(keys: string[]): Promise<Array<StoredData<Value | undefined>>> {
     const results = await Promise.all(
       keys.map(async (key) => {
         const value = await this.get(key)
         return value as StoredData<Value | undefined>
-      })
+      }),
     )
     return results
   }
@@ -144,9 +148,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
   }
 
   public async deleteMany(keys: string[]): Promise<boolean> {
-    const deletePromises: Promise<boolean>[] = keys.map((key) =>
-      this.delete(key)
-    )
+    const deletePromises: Promise<boolean>[] = keys.map((key) => this.delete(key))
     const results = await Promise.all(deletePromises)
     return results.every((result) => result)
   }
@@ -239,16 +241,21 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
 export default KeyvFile
 
 export class Field<T, D extends T | void = T | void> {
-  constructor(
-    protected kv: KeyvFile,
-    protected key: string,
-    protected defaults?: D
-  ) {}
+  constructor(protected kv: KeyvFile | Keyv, protected key: string, protected defaults: D) {}
 
   get(): Promise<D>
   get(def: D): Promise<D>
   async get(def = this.defaults) {
     return (await this.kv.get(this.key)) ?? def
+  }
+
+  getSync(): D
+  getSync(def: D): D
+  getSync(def = this.defaults) {
+    if ('getSync' in this.kv) {
+      return this.kv.getSync<D>(this.key) ?? def
+    }
+    throw new Error('kv does not support getSync')
   }
   set(val: T, ttl?: number) {
     return this.kv.set(this.key, val, ttl)
@@ -259,14 +266,14 @@ export class Field<T, D extends T | void = T | void> {
 }
 
 export function makeField<T = any, D = T>(
-  kv: KeyvFile,
+  kv: KeyvFile | Keyv,
   key: string,
-  defaults: T
+  defaults: T,
 ): Field<T, T>
 export function makeField<T = any, D extends T | void = T | void>(
-  kv: KeyvFile,
+  kv: KeyvFile | Keyv,
   key: string,
-  defaults?: D
+  defaults?: D,
 ) {
-  return new Field<T, D>(kv, key, defaults)
+  return new Field(kv, key, defaults)
 }
