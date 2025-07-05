@@ -5,6 +5,7 @@ import * as fs from 'fs-extra'
 import EventEmitter from 'events'
 import type { Keyv, KeyvStoreAdapter, StoredData } from 'keyv'
 import { defaultDeserialize, defaultSerialize } from '@keyv/serialize'
+export * from './make-field'
 
 export interface Options {
   deserialize: (val: string) => any
@@ -42,7 +43,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
   public ttlSupport = true
   public namespace?: string
   public opts: Options
-  private _cache: Map<string, WrappedValue>
+  private _data: Map<string, WrappedValue>
   private _lastExpire: number
 
   constructor(options?: Partial<Options>) {
@@ -62,10 +63,10 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
           }
         }
       }
-      this._cache = new Map(data.cache)
+      this._data = new Map(data.cache)
       this._lastExpire = data.lastExpire
     } catch (e) {
-      this._cache = new Map()
+      this._data = new Map()
       this._lastExpire = Date.now()
     }
   }
@@ -106,7 +107,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
 
   public getSync<Value>(key: string): Value | undefined {
     try {
-      const data = this._cache.get(key)
+      const data = this._data.get(key)
       if (!data) {
         return undefined
       } else if (this.isExpired(data)) {
@@ -134,7 +135,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
     if (ttl === 0) {
       ttl = undefined
     }
-    this._cache.set(key, {
+    this._data.set(key, {
       expire: isNumber(ttl) ? Date.now() + ttl : undefined,
       value: value as any,
     })
@@ -142,7 +143,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
   }
 
   public async delete(key: string) {
-    const ret = this._cache.delete(key)
+    const ret = this._data.delete(key)
     await this.save()
     return ret
   }
@@ -154,7 +155,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
   }
 
   public async clear() {
-    this._cache = new Map()
+    this._data = new Map()
     this._lastExpire = Date.now()
     return this.save()
   }
@@ -173,10 +174,10 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
     if (now - this._lastExpire <= this.opts.expiredCheckDelay) {
       return
     }
-    for (const key of this._cache.keys()) {
-      const data = this._cache.get(key)
+    for (const key of this._data.keys()) {
+      const data = this._data.get(key)
       if (this.isExpired(data!)) {
-        this._cache.delete(key)
+        this._data.delete(key)
       }
     }
     this._lastExpire = now
@@ -184,7 +185,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
 
   private saveToDisk() {
     const cache = [] as [string, any][]
-    for (const [key, val] of this._cache) {
+    for (const [key, val] of this._data) {
       cache.push([key, val])
     }
     const data = this.opts.serialize({
@@ -226,7 +227,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
   }
 
   public async *iterator(namespace?: string) {
-    for (const [key, data] of this._cache.entries()) {
+    for (const [key, data] of this._data.entries()) {
       if (key === undefined) {
         continue
       }
@@ -239,41 +240,3 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
 }
 
 export default KeyvFile
-
-export class Field<T, D extends T | void = T | void> {
-  constructor(protected kv: KeyvFile | Keyv, protected key: string, protected defaults: D) {}
-
-  get(): Promise<D>
-  get(def: D): Promise<D>
-  async get(def = this.defaults) {
-    return (await this.kv.get(this.key)) ?? def
-  }
-
-  getSync(): D
-  getSync(def: D): D
-  getSync(def = this.defaults) {
-    if ('getSync' in this.kv) {
-      return this.kv.getSync<D>(this.key) ?? def
-    }
-    throw new Error('kv does not support getSync')
-  }
-  set(val: T, ttl?: number) {
-    return this.kv.set(this.key, val, ttl)
-  }
-  delete() {
-    return this.kv.delete(this.key)
-  }
-}
-
-export function makeField<T = any, D = T>(
-  kv: KeyvFile | Keyv,
-  key: string,
-  defaults: T,
-): Field<T, T>
-export function makeField<T = any, D extends T | void = T | void>(
-  kv: KeyvFile | Keyv,
-  key: string,
-  defaults?: D,
-) {
-  return new Field(kv, key, defaults)
-}
