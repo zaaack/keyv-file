@@ -2,7 +2,7 @@
 
 > File storage adapter for Keyv, using json to serialize data fast and small.
 
-[![Build Status](https://travis-ci.org/zaaack/keyv-file.svg?branch=master)](https://travis-ci.org/zaaack/keyv-file)
+[![publish](https://github.com/zaaack/keyv-file/actions/workflows/publish.yml/badge.svg)](https://github.com/zaaack/keyv-file/actions/workflows/publish.yml)
 [![npm](https://img.shields.io/npm/v/keyv-file.svg)](https://www.npmjs.com/package/keyv-file)
 
 File storage adapter for [Keyv](https://github.com/lukechilds/keyv).

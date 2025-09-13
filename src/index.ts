@@ -122,11 +122,15 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
   }
 
   public async getMany<Value>(keys: string[]): Promise<Array<StoredData<Value | undefined>>> {
-    return keys.map((key) => {
-        return this.getSync(key) as StoredData<Value | undefined>
-      })
+    return keys.map((key) => this.getSync(key))
   }
-
+  /**
+   * Note: `await kv.set()` will wait <options.writeDelay> millseconds to save to disk, it would be slow. Please remove `await` if you find performance issues.
+   * @param key
+   * @param value
+   * @param ttl
+   * @returns
+   */
   public async set(key: string, value: any, ttl?: number) {
     if (ttl === 0) {
       ttl = undefined
