@@ -122,13 +122,9 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
   }
 
   public async getMany<Value>(keys: string[]): Promise<Array<StoredData<Value | undefined>>> {
-    const results = await Promise.all(
-      keys.map(async (key) => {
-        const value = await this.get(key)
-        return value as StoredData<Value | undefined>
-      }),
-    )
-    return results
+    return keys.map((key) => {
+        return this.getSync(key) as StoredData<Value | undefined>
+      })
   }
 
   public async set(key: string, value: any, ttl?: number) {
@@ -149,9 +145,9 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
   }
 
   public async deleteMany(keys: string[]): Promise<boolean> {
-    const deletePromises: Promise<boolean>[] = keys.map((key) => this.delete(key))
-    const results = await Promise.all(deletePromises)
-    return results.every((result) => result)
+    let res = keys.every((key) => this._data.delete(key))
+    await this.save()
+    return res
   }
 
   public async clear() {
