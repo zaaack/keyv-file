@@ -104,7 +104,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
   }
 
   public async get<Value>(key: string): Promise<StoredData<Value> | undefined> {
-    return Promise.resolve(this.getSync(key))
+    return this.getSync(key)
   }
 
   public getSync<Value>(key: string): Value | undefined {
