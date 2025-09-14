@@ -18,6 +18,12 @@ export class Field<T, D extends T | void = T | void> {
     }
     throw new Error('kv does not support getSync')
   }
+  /**
+   * Note: `await kv.someFiled.set()` will wait <options.writeDelay> millseconds to save to disk, it would be slow. Please remove `await` if you find performance issues.
+   * @param value
+   * @param ttl
+   * @returns
+   */
   set(val: T, ttl?: number) {
     return this.kv.set(this.key, val, ttl)
   }

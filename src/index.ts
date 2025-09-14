@@ -183,7 +183,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
     this._lastExpire = now
   }
 
-  private saveToDisk() {
+  private async saveToDisk() {
     const cache = [] as [string, any][]
     for (const [key, val] of this._data) {
       cache.push([key, val])
@@ -192,15 +192,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
       cache,
       lastExpire: this._lastExpire,
     })
-    return new Promise<void>((resolve, reject) => {
-      fs.outputFile(this.opts.filename, data, (err) => {
-        if (err) {
-          reject(err)
-        } else {
-          resolve()
-        }
-      })
-    })
+    return fs.outputFile(this.opts.filename, data)
   }
 
   private _savePromise?: Promise<any>
