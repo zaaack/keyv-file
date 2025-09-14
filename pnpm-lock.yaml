@@ -11,9 +11,6 @@ importers:
       '@keyv/serialize':
         specifier: ^1.0.1
         version: 1.0.1
-      fs-extra:
-        specifier: ^4.0.1
-        version: 4.0.3
       tslib:
         specifier: ^1.14.1
         version: 1.14.1
@@ -510,9 +507,6 @@ packages:
   fs-constants@1.0.0:
     resolution: {integrity: sha512-y6OAwoSIf7FyjMIv94u+b5rdheZEjzR63GTyZJm5qh4Bi+2YgwLCcI/fPFZkL5PSixOt6ZNKm+w+Hfp/Bciwow==}
 
-  fs-extra@4.0.3:
-    resolution: {integrity: sha512-q6rbdDd1o2mAnQreO7YADIxf/Whx4AHBiRf6d+/cVT8h44ss+lHgxf1FemcqDnQt9X3ct4McHr+JMGlYSsK7Cg==}
-
   fs-minipass@2.1.0:
     resolution: {integrity: sha512-V/JgOLFCS+R6Vcq0slCuaeWEdNC3ouDlJMNIsacH2VtALiu9mV4LPrHc5cDl8k5aw6J8jwgWWpiTo5RYhmIzvg==}
     engines: {node: '>= 8'}
@@ -619,9 +613,6 @@ packages:
 
   json-bigint@1.0.0:
     resolution: {integrity: sha512-SiPv/8VpZuWbvLSMtTDU8hEfrZWg/mH/nV/b4o0CYbSxu1UIQPLdwKOCIyLQX+VIPO5vrLX3i8qtqFyhdPSUSQ==}
-
-  jsonfile@4.0.0:
-    resolution: {integrity: sha512-m6F1R3z8jjlf2imQHS2Qez5sjKWQzbuuhuJ/FKYFRZvPE3PuHcSMVZzfsLhGVOkfd20obL5SWEBew5ShlquNxg==}
 
   keyv@5.0.1:
     resolution: {integrity: sha512-NH+3ditq1O5uTSQiiHrGOTkwUniRox/lZ8tHARdsu5Skyv0AhZca0OCycWfR1fTECvSRftMQnXqx7cBpxo8G1g==}
@@ -966,10 +957,6 @@ packages:
 
   unique-slug@2.0.2:
     resolution: {integrity: sha512-zoWr9ObaxALD3DOPfjPSqxt4fnZiWblxHIgeWqW8x7UqDzEtHEQLzji2cuJYQFCU6KmoJikOYAZlrTHHebjx2w==}
-
-  universalify@0.1.2:
-    resolution: {integrity: sha512-rBJeI5CXAlmy1pV+617WB9J63U6XcazHHF2f2dbJix4XzpUF0RS3Zbj0FGIOCAva5P/d/GBOYaACQ1w+0azUkg==}
-    engines: {node: '>= 4.0.0'}
 
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
@@ -1486,12 +1473,6 @@ snapshots:
 
   fs-constants@1.0.0: {}
 
-  fs-extra@4.0.3:
-    dependencies:
-      graceful-fs: 4.2.11
-      jsonfile: 4.0.0
-      universalify: 0.1.2
-
   fs-minipass@2.1.0:
     dependencies:
       minipass: 3.3.6
@@ -1530,7 +1511,8 @@ snapshots:
       path-is-absolute: 1.0.1
     optional: true
 
-  graceful-fs@4.2.11: {}
+  graceful-fs@4.2.11:
+    optional: true
 
   has-unicode@2.0.1:
     optional: true
@@ -1610,10 +1592,6 @@ snapshots:
   json-bigint@1.0.0:
     dependencies:
       bignumber.js: 9.1.2
-
-  jsonfile@4.0.0:
-    optionalDependencies:
-      graceful-fs: 4.2.11
 
   keyv@5.0.1:
     dependencies:
@@ -2022,8 +2000,6 @@ snapshots:
     dependencies:
       imurmurhash: 0.1.4
     optional: true
-
-  universalify@0.1.2: {}
 
   util-deprecate@1.0.2: {}
 

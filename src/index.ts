@@ -1,10 +1,12 @@
 'use strict'
 
 import * as os from 'os'
-import * as fs from 'fs-extra'
+import * as fs from 'fs'
+import * as fsp from 'fs/promises'
 import EventEmitter from 'events'
 import type { Keyv, KeyvStoreAdapter, StoredData } from 'keyv'
 import { defaultDeserialize, defaultSerialize } from '@keyv/serialize'
+import path from 'path'
 export * from './make-field'
 
 export interface Options {
@@ -192,7 +194,10 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
       cache,
       lastExpire: this._lastExpire,
     })
-    return fs.outputFile(this.opts.filename, data)
+    await fsp.mkdir(path.dirname(this.opts.filename), {
+      recursive: true,
+    })
+    return fsp.writeFile(this.opts.filename, data)
   }
 
   private _savePromise?: Promise<any>
