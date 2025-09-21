@@ -32,17 +32,16 @@
   },
   "homepage": "https://github.com/zaaack/keyv-file#readme",
   "devDependencies": {
-    "@keyv/test-suite": "^2.0.1",
-    "@types/debug": "^0.0.31",
-    "@types/fs-extra": "^5.0.4",
-    "@types/node": "^22.2.0",
+    "@keyv/test-suite": "^2.1.1",
+    "@types/debug": "^4.1.12",
+    "@types/node": "^24.5.2",
     "benchmark": "^2.1.4",
-    "keyv": "^5.0.1",
+    "keyv": "^5.5.2",
     "typescript": "^5.5.4",
     "vitest": "^2.0.5"
   },
   "dependencies": {
-    "@keyv/serialize": "^1.0.1",
+    "@keyv/serialize": "^1.1.1",
     "tslib": "^1.14.1"
   },
   "packageManager": "pnpm@9.6.0+sha512.38dc6fba8dba35b39340b9700112c2fe1e12f10b17134715a4aa98ccf7bb035e76fd981cf0bb384dfa98f8d6af5481c2bef2f4266a24bfa20c34eb7147ce0b5e"
