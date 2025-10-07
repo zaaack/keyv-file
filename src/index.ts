@@ -4,22 +4,25 @@ import * as os from 'os'
 import * as fs from 'fs'
 import * as fsp from 'fs/promises'
 import EventEmitter from 'events'
-import type { Keyv, KeyvStoreAdapter, StoredData } from 'keyv'
+import type { KeyvStoreAdapter } from 'keyv'
 import { defaultDeserialize, defaultSerialize } from '@keyv/serialize'
 import path from 'path'
 export * from './make-field'
 
 export interface Options {
-  deserialize: (val: string) => any
+  deserialize: (val: string | Buffer) => any
   dialect: string
   /** milliseconds */
   expiredCheckDelay: number
   filename: string
-  serialize: (val: any) => string
+  serialize: (val: any) => string | Buffer
   /** milliseconds */
   writeDelay: number
   /** create lock file and check if exists */
   checkFileLock: boolean
+
+  /** keep cache in memory, default: true */
+  keepCacheInMemory: boolean
 }
 
 export const defaultOpts: Options = {
@@ -30,12 +33,19 @@ export const defaultOpts: Options = {
   serialize: defaultSerialize,
   writeDelay: 100, // ms
   checkFileLock: false,
+  keepCacheInMemory: true,
 }
 
 function isNumber(val: any): val is number {
   return typeof val === 'number'
 }
-
+function handleIOError(e: any) {
+  if (e.code === 'ENOENT') {
+    return
+  } else {
+    console.error(e)
+  }
+}
 export interface WrappedValue<T = any> {
   value: T
   expire?: number
@@ -45,8 +55,12 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
   public ttlSupport = true
   public namespace?: string
   public opts: Options
-  private _data: Map<string, WrappedValue>
-  private _lastExpire: number
+  private _data: Map<string, WrappedValue> = new Map()
+  private _lastExpire = 0
+
+  private get _lastExpireFile() {
+    return this.opts.filename + '.expire'
+  }
 
   constructor(options?: Partial<Options>) {
     super()
@@ -54,6 +68,18 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
     if (this.opts.checkFileLock) {
       this.acquireFileLock()
     }
+    if (this.opts.keepCacheInMemory) {
+      this._loadDataSync()
+    } else {
+      try {
+        this._lastExpire = Number(fs.readFileSync(this._lastExpireFile, 'utf8'))
+      } catch (error) {
+        handleIOError(error)
+      }
+    }
+  }
+
+  private _loadDataSync() {
     try {
       const data = this.opts.deserialize(fs.readFileSync(this.opts.filename, 'utf8'))
       if (!Array.isArray(data.cache)) {
@@ -68,6 +94,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
       this._data = new Map(data.cache)
       this._lastExpire = data.lastExpire
     } catch (e) {
+      handleIOError(e)
       this._data = new Map()
       this._lastExpire = Date.now()
     }
@@ -98,32 +125,56 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
   releaseFileLock() {
     try {
       fs.unlinkSync(this._lockFile)
-    } catch {
+    } catch (e) {
       //pass
+      handleIOError(e)
     }
   }
 
-  public async get<Value>(key: string): Promise<StoredData<Value> | undefined> {
+  public async get<Value>(key: string): Promise<Value | undefined> {
+    if (!this.opts.keepCacheInMemory) {
+      try {
+        let rawData = await fsp.readFile(path.join(this.opts.filename, key), 'utf8')
+        let data = await this.opts.deserialize(rawData)
+        if (this.isExpired(data)) {
+          await this.delete(key)
+          return undefined
+        }
+        return data.value as Value
+      } catch (e) {
+        handleIOError(e)
+      }
+      return void 0
+    }
     return this.getSync(key)
   }
 
   public getSync<Value>(key: string): Value | undefined {
+    if (!this.opts.keepCacheInMemory) {
+      throw new Error(`[keyv-file] getSync not support when opts.keepCacheInMemory is false`)
+    }
+    let ret: Value | undefined = void 0
     try {
       const data = this._data.get(key)
       if (!data) {
-        return undefined
+        ret = undefined
       } else if (this.isExpired(data)) {
         this.delete(key)
-        return undefined
+        ret = undefined
       } else {
-        return data.value as Value
+        ret = data.value as Value
       }
     } catch (error) {
       // do nothing;
+      handleIOError(error)
     }
+    return ret
   }
 
-  public async getMany<Value>(keys: string[]): Promise<Array<StoredData<Value | undefined>>> {
+  public async getMany<Value>(keys: string[]): Promise<Array<Value | undefined>> {
+    if (!this.opts.keepCacheInMemory) {
+      return Promise.all(keys.map((key) => this.get<Value>(key)))
+    }
     return keys.map((key) => this.getSync(key))
   }
   /**
@@ -137,26 +188,58 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
     if (ttl === 0) {
       ttl = undefined
     }
-    this._data.set(key, {
+    value = {
       expire: isNumber(ttl) ? Date.now() + ttl : undefined,
       value: value as any,
-    })
+    }
+    if (!this.opts.keepCacheInMemory) {
+      try {
+        this.clearExpire()
+        await fsp.mkdir(this.opts.filename, {
+          recursive: true,
+        })
+        await fsp.writeFile(path.join(this.opts.filename, key), this.opts.serialize(value))
+      } catch (e) {
+        handleIOError(e)
+      }
+      return
+    }
+    this._data.set(key, value)
     return this.save()
   }
 
   public async delete(key: string) {
+    if (!this.opts.keepCacheInMemory) {
+      try {
+        await fsp.unlink(path.join(this.opts.filename, key))
+      } catch (e) {
+        handleIOError(e)
+        return false
+      }
+      return true
+    }
     const ret = this._data.delete(key)
     await this.save()
     return ret
   }
 
   public async deleteMany(keys: string[]): Promise<boolean> {
+    if (!this.opts.keepCacheInMemory) {
+      let ret = await Promise.all(keys.map((key) => this.delete(key)))
+      return ret.every(r=>r)
+    }
     let res = keys.every((key) => this._data.delete(key))
     await this.save()
     return res
   }
 
   public async clear() {
+    if (!this.opts.keepCacheInMemory) {
+      await fsp.rm(this.opts.filename, {
+        recursive: true,
+      })
+      return true
+    }
     this._data = new Map()
     this._lastExpire = Date.now()
     return this.save()
@@ -176,13 +259,27 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
     if (now - this._lastExpire <= this.opts.expiredCheckDelay) {
       return
     }
+    this._lastExpire = now
+    if (!this.opts.keepCacheInMemory) {
+      fsp
+        .readdir(this.opts.filename)
+        .then((keys) => {
+          for (const key of keys) {
+            this.get(key)
+          }
+        })
+        .catch(handleIOError)
+      fsp
+       .writeFile(this._lastExpireFile, this._lastExpire.toString())
+       .catch(handleIOError)
+      return
+    }
     for (const key of this._data.keys()) {
       const data = this._data.get(key)
       if (this.isExpired(data!)) {
         this._data.delete(key)
       }
     }
-    this._lastExpire = now
   }
 
   private async saveToDisk() {
@@ -224,6 +321,21 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
   }
 
   public async *iterator(namespace?: string) {
+    if (!this.opts.keepCacheInMemory) {
+      let keys = await fsp.readdir(this.opts.filename)
+      for (const key of keys) {
+        try {
+          let rawData = await fsp.readFile(path.join(this.opts.filename, key), 'utf8')
+          let data = await this.opts.deserialize(rawData)
+          if (!namespace || key.includes(namespace)) {
+            yield [key, data.value]
+          }
+        } catch (error) {
+          handleIOError(error)
+        }
+      }
+      return
+    }
     for (const [key, data] of this._data.entries()) {
       if (key === undefined) {
         continue
