@@ -9,12 +9,12 @@ const store = () => new KeyvStore({
 });
 
 const store2 = () => new KeyvStore({
-  filename: `./node_modules/.cache/test-save-${Math.random().toString(36).slice(2)}.json`,
+  filename: `./node_modules/.cache/test-save-${Math.random().toString(36).slice(2)}`,
   keepCacheInMemory: false,
 });
 
-// keyvTestSuite(test, Keyv, store);
-// keyvIteratorTests(test, Keyv, store);
+keyvTestSuite(test, Keyv, store);
+keyvIteratorTests(test, Keyv, store);
 
 keyvTestSuite(test, Keyv, store2);
 keyvIteratorTests(test, Keyv, store2);
