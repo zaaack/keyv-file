@@ -7,7 +7,7 @@
   "types": "./lib/index",
   "scripts": {
     "build": "tsc",
-    "test": "tsc && vitest run",
+    "test": "tsc && rm -rf ./node_modules/.cache && vitest run",
     "preversion": "pnpm test",
     "postversion": "git add -A && git push origin master --tags"
   },
