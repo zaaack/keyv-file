@@ -1,5 +1,5 @@
 const fs = require('fs')
-const {KeyvFile} = require('./lib/index.js')
+const {KeyvFile} = require('../lib/index.js')
 
 // try {
 //   const lock = './test.lock'

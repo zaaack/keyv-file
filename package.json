@@ -36,9 +36,10 @@
     "@types/debug": "^4.1.12",
     "@types/node": "^24.5.2",
     "benchmark": "^2.1.4",
-    "keyv": "^5.5.2",
-    "typescript": "^5.5.4",
-    "vitest": "^2.0.5"
+    "keyv": "^5.5.3",
+    "msgpackr": "^1.11.5",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "@keyv/serialize": "^1.1.1",

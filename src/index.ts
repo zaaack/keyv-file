@@ -30,7 +30,7 @@ export interface Options {
 }
 
 export const defaultOpts: Options = {
-  deserialize: defaultDeserialize,
+  deserialize: (val: string | Buffer) => defaultDeserialize(val.toString()),
   dialect: 'redis',
   expiredCheckDelay: 24 * 3600 * 1000, // ms
   filename: `${os.tmpdir()}/keyv-file/default.json`,
@@ -73,7 +73,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
 
   private _loadDataSync() {
     try {
-      const data = this.opts.deserialize(fs.readFileSync(this.opts.filename, 'utf8'))
+      const data = this.opts.deserialize(fs.readFileSync(this.opts.filename))
       if (!Array.isArray(data.cache)) {
         const _cache = data.cache
         data.cache = []
