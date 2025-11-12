@@ -1,5 +1,6 @@
 const fs = require('fs')
-const {KeyvFile} = require('../lib/index.js')
+const {KeyvFile} = require('../lib/index.js');
+const { SafeFilenameEncoder } = require('../lib/safe-encoder.js');
 
 // try {
 //   const lock = './test.lock'
@@ -29,8 +30,9 @@ const store = new KeyvFile({
 });
 async function main() {
 
-  await store.set('foo', 'bar')
-  console.log(await store.get('foo'))
+  // await store.set('foo', 'bar')
+  // console.log(await store.get('foo'))
+  console.log(SafeFilenameEncoder.encode("中文"))
 }
 
 main().catch(console.error)

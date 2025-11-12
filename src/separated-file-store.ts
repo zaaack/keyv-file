@@ -20,7 +20,8 @@ export class SeparatedFileHelper {
   private get _lastExpireFile() {
     return path.join(this.opts.filename, '.lastExpire')
   }
-  constructor(private opts: Options) {}
+  constructor(private opts: Options) {
+  }
 
   getLastExpire() {
     try {

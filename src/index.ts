@@ -64,6 +64,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
       this.acquireFileLock()
     }
     if (this.opts.separatedFile) {
+      fs.mkdirSync(this.opts.filename, { recursive: true })
       this._lastExpire = this._separated.getLastExpire()
     } else {
       this._loadDataSync()
