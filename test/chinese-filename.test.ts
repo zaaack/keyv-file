@@ -9,6 +9,13 @@ describe('SafeFilenameEncoder 中文支持', () => {
     const decoded = SafeFilenameEncoder.decode(encoded)
     expect(decoded).toBe(chineseText)
   })
+  it('应该保留字母数字', () => {
+    const consecutiveSpecial = 'test123'
+    const encoded = SafeFilenameEncoder.encode(consecutiveSpecial)
+    expect(encoded).toBe('test123')
+    const decoded = SafeFilenameEncoder.decode(encoded)
+    expect(decoded).toBe(consecutiveSpecial)
+  })
 
   it('应该编码特殊字符但保留中文', () => {
     const mixedText = '中文/测试:文件*名?'
