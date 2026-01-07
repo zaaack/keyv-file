@@ -87,7 +87,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
       this._data = new Map(data.cache)
       this._lastExpire = data.lastExpire
     } catch (e) {
-      handleIOError(e)
+      handleIOError(e, '_loadDataSync')
       this._data = new Map()
       this._lastExpire = Date.now()
     }
@@ -123,7 +123,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
       fs.unlinkSync(this._lockFile)
     } catch (e) {
       //pass
-      handleIOError(e)
+      handleIOError(e, "releaseFileLock")
     }
   }
   public async get<Value>(key: string): Promise<Value | undefined> {
@@ -144,7 +144,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
       const data = this._data.get(key)
       return this._getWithExpire(key, data)
     } catch (error) {
-      handleIOError(error)
+      handleIOError(error, key)
     }
     return ret
   }

@@ -6,11 +6,11 @@ import * as fsp from 'fs/promises'
 import type { Options, WrappedValue } from './index'
 import { SafeFilenameEncoder } from './safe-encoder'
 
-export function handleIOError(e: any) {
+export function handleIOError(e: any, key: string) {
   if (e.code === 'ENOENT') {
     return
   } else {
-    console.error(e)
+    console.error(`key:${key}`, e)
   }
 }
 export class SeparatedFileHelper {
@@ -27,7 +27,7 @@ export class SeparatedFileHelper {
     try {
       return Number(fs.readFileSync(this._lastExpireFile, 'utf8'))
     } catch (error) {
-      handleIOError(error)
+      handleIOError(error, this._lastExpireFile)
     }
     return 0
   }
@@ -36,7 +36,7 @@ export class SeparatedFileHelper {
     try {
       fsp.writeFile(this._lastExpireFile, expire.toString())
     } catch (error) {
-      handleIOError(error)
+      handleIOError(error, this._lastExpireFile)
     }
   }
 
@@ -46,7 +46,7 @@ export class SeparatedFileHelper {
       let data = this.opts.deserialize(rawData) as WrappedValue<T>
       return data
     } catch (error) {
-      handleIOError(error)
+      handleIOError(error, key)
     }
   }
   /**
@@ -60,7 +60,7 @@ export class SeparatedFileHelper {
       let data = this.opts.deserialize(rawData) as WrappedValue<any>
       return data
     } catch (error) {
-      handleIOError(error)
+      handleIOError(error, key)
     }
   }
 
@@ -76,7 +76,7 @@ export class SeparatedFileHelper {
       })
       await fsp.writeFile(this._getKey(key), rawData)
     } catch (e) {
-      handleIOError(e)
+      handleIOError(e, key)
     }
   }
   async delete(key: string) {
@@ -84,7 +84,7 @@ export class SeparatedFileHelper {
       await fsp.unlink(this._getKey(key))
       return true
     } catch (e) {
-      handleIOError(e)
+      handleIOError(e, key)
       return false
     }
   }
@@ -104,7 +104,7 @@ export class SeparatedFileHelper {
       }
       await fsp.writeFile(this._lastExpireFile, Date.now().toString())
     } catch (error) {
-      handleIOError(error)
+      handleIOError(error, 'clearExpire')
     }
   }
 
