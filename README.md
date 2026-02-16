@@ -17,6 +17,13 @@ npm install --save keyv keyv-file
 
 ## Usage
 
+### Using with AI agent
+
+```sh
+npx skills add https://github.com/zaaack/prompts --skill keyv-file
+
+```
+
 ### Using with keyv
 ```js
 const Keyv = require('keyv')
