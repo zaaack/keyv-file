@@ -307,7 +307,14 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
       keys = keys.filter((key) => key.startsWith(namespace))
     }
     for (const key of keys) {
-      const value = await this.get<any>(key)
+      let value: any
+      if (this.opts.separatedFile) {
+        const data = await this._separated.get(key)
+        value = data?.value
+      } else {
+        const wrappedValue = this._data.get(key)
+        value = wrappedValue?.value
+      }
       yield [key, value]
     }
   }
