@@ -129,7 +129,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
   public async get<Value>(key: string): Promise<Value | undefined> {
     if (this.opts.separatedFile) {
       let data = await this._separated.get(key)
-      return this._getWithExpire(key, data)
+      return this._getWithExpireAsync(key, data)
     }
     return this.getSync(key)
   }
@@ -218,7 +218,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
     return isNumber(data.expire) && data.expire <= Date.now()
   }
 
-  private _getWithExpire(key: string, data?: WrappedValue) {
+  private  _getWithExpire(key: string, data?: WrappedValue) {
     if (!data) {
       return
     }
@@ -228,6 +228,17 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
     }
     return data.value
   }
+
+    private async _getWithExpireAsync(key: string, data?: WrappedValue) {
+      if (!data) {
+        return
+      }
+      if (this.isExpired(data)) {
+        await this.delete(key)
+        return
+      }
+      return data.value
+    }
 
   private clearExpire() {
     const now = Date.now()
@@ -283,16 +294,21 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
     return Promise.resolve()
   }
 
-  public async *iterator(namespace?: string) {
-    let entries = this.opts.separatedFile ? await this._separated.entries() : this._data.entries()
-    for (const [key, data] of entries) {
-      if (key === undefined || data === undefined) {
-        continue
-      }
-      // Filter by namespace if provided
-      if (!namespace || key.includes(namespace)) {
-        yield [key, data.value]
-      }
+  async keys() {
+    if (this.opts.separatedFile) {
+      return this._separated.keys()
+    }
+    return this._data.keys()
+  }
+
+  public async *iterator<Value>(namespace?: string):AsyncGenerator<(string | Awaited<Value> | undefined)[], void, any> {
+    let keys = await this.keys()
+    if (namespace) {
+      keys = keys.filter((key) => key.startsWith(namespace))
+    }
+    for (const key of keys) {
+      const value = await this.get<any>(key)
+      yield [key, value]
     }
   }
 }

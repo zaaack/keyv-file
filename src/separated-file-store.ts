@@ -108,14 +108,9 @@ export class SeparatedFileHelper {
     }
   }
 
-  async entries() {
-    return fsp.readdir(this.opts.filename).then((keys) => {
-      return Promise.all(
-        keys.map(async (key) => {
-          key = SafeFilenameEncoder.decode(key)
-          return [key, await this.get(key)] as const
-        }),
-      )
-    })
+  async keys() {
+    const keys = await fsp.readdir(this.opts.filename)
+    return keys.map((key) => SafeFilenameEncoder.decode(key))
   }
+
 }
