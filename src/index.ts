@@ -307,6 +307,9 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
       keys = keys.filter((key) => key.startsWith(namespace))
     }
     for (const key of keys) {
+      // 直接读取原始序列化值，不经过 get()。
+      // get() 会检查过期并删除过期 key 返回 undefined，
+      // 但 keyv 的 generateIterator 需要原始值来自己处理过期检查。
       let value: any
       if (this.opts.separatedFile) {
         const data = await this._separated.get(key)
