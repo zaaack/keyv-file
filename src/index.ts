@@ -87,7 +87,7 @@ export class KeyvFile extends EventEmitter implements KeyvStoreAdapter {
       this._data = new Map(data.cache)
       this._lastExpire = data.lastExpire
     } catch (e) {
-      handleIOError(e, '_loadDataSync')
+      handleIOError(e, '_loadDataSync:'+this.opts.filename)
       this._data = new Map()
       this._lastExpire = Date.now()
     }

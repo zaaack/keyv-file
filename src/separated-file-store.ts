@@ -13,12 +13,14 @@ export function handleIOError(e: any, key: string) {
     console.error(`key:${key}`, e)
   }
 }
+
+const LastExpireFileName = '.lastExpire'
 export class SeparatedFileHelper {
   get lockFile() {
     return path.join(this.opts.filename, '.lock')
   }
   private get _lastExpireFile() {
-    return path.join(this.opts.filename, '.lastExpire')
+    return path.join(this.opts.filename, LastExpireFileName)
   }
   constructor(private opts: Options) {
   }
@@ -110,7 +112,7 @@ export class SeparatedFileHelper {
 
   async keys() {
     const keys = await fsp.readdir(this.opts.filename)
-    return keys.map((key) => SafeFilenameEncoder.decode(key))
+    return keys.filter(f=> f!== LastExpireFileName).map((key) => SafeFilenameEncoder.decode(key))
   }
 
 }
